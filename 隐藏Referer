@@ -1,0 +1,48 @@
+大家都知道，当1207.me上点击某个链接进入baidu.com，那么baidu.com的请求header上会有一个Referer，它的值将是1207.me。今天就遇到一个隐藏Referer发起请求的需求。
+
+这里提供我所使用的几个方法：
+
+1、全浏览器支持
+
+其实这主要是利用了base64的特性，需要后端代码协助实现，这里以PHP来做示例
+if($method == 'hidden'){
+  $base64Str = '
+    <script>
+      var url = "http://www.1207.me/testreferer/i.php?m=show";
+      document.write("<meta http-equiv=\"refresh\" content=\"0;url="+url+"\"/>");
+    </script>';
+  $base64Data = 'data:text/html;base64,' . base64_encode($base64Str);
+  echo sprintf('
+    <script>
+      var iurl = %s;
+      document.write("<meta http-equiv=\"refresh\" content=\"0;url="+iurl+"\"/>");
+    </script>
+  ', $base64Data);
+}elseif($method == 'show'){
+  echo '<pre>';
+  print_r($_SERVER);
+}else{
+  echo '<a href="http://www.1207.me/testreferer/i.php?m=hidden">hidden referer to request</a>';
+}
+2、使用html属性
+
+在你的a标签上增加rel="noreferrer"属性，目前大部分Webkit的浏览器已经支持
+<a href='http://www.1207.me' rel="noreferrer">open me</a>
+
+3、完全使用javascript来实现
+
+据说火狐浏览器无法支持，因为环境原因我没办法测试，你可以试试
+// in the current page open
+function self_open(link){
+  document.body.appendChild(document.createElement('iframe')).src='javascript:"<script>top.location.replace(\''+link+'\')<\/script>"';
+}
+// in the new page open
+function new_window_open(link){
+  window.open('javascript:window.name;', '<script>location.replace("'+link+'")<\/script>');
+}
+</script>
+<a href='http://www.1207.me' rel="noreferrer">open</a>
+<br>
+<a href='javascript:self_open("http://www.1207.me")'>open</a>
+<br>
+<a href='javascript:new_window_open("http://www.1207.me")'>open</a>
